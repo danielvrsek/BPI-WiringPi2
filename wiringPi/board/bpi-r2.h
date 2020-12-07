@@ -1,49 +1,50 @@
 // Author: Alan Chao - Institute of Network Coding - The Chinese University of Hong Kong
 
-#define	BPI_R2_01	-1
-#define	BPI_R2_03	75
-#define	BPI_R2_05	76
-#define	BPI_R2_07	206
-#define	BPI_R2_09	-1
-#define	BPI_R2_11	80
-#define	BPI_R2_13	79
-#define	BPI_R2_15	205
-#define	BPI_R2_17	-1
-#define	BPI_R2_19	56
-#define	BPI_R2_21	55
-#define	BPI_R2_23	54
-#define	BPI_R2_25	-1
-#define	BPI_R2_27	57
-#define	BPI_R2_29	126
-#define	BPI_R2_31	74
-#define	BPI_R2_33	73
-#define	BPI_R2_35	49
-#define	BPI_R2_37	202
-#define	BPI_R2_39	-1
+#define BPI_R2_01   -1
+#define BPI_R2_03   MTK_GPIO_75
+#define BPI_R2_05   MTK_GPIO_76
+#define BPI_R2_07   MTK_GPIO_206
+#define BPI_R2_09   -1
+#define BPI_R2_11   MTK_GPIO_80
+#define BPI_R2_13   MTK_GPIO_79
+#define BPI_R2_15   MTK_GPIO_205
+#define BPI_R2_17   -1
+#define BPI_R2_19   MTK_GPIO_56
+#define BPI_R2_21   MTK_GPIO_55
+#define BPI_R2_23   MTK_GPIO_54
+#define BPI_R2_25   -1
+#define BPI_R2_27   MTK_GPIO_57
+#define BPI_R2_29   MTK_GPIO_126
+#define BPI_R2_31   MTK_GPIO_74
+#define BPI_R2_33   MTK_GPIO_73
+#define BPI_R2_35   MTK_GPIO_49
+#define BPI_R2_37   MTK_GPIO_202
+#define BPI_R2_39   -1
 
-#define	BPI_R2_02	-1
-#define	BPI_R2_04	-1
-#define	BPI_R2_06	-1
-#define	BPI_R2_08	82
-#define	BPI_R2_10	81
-#define	BPI_R2_12	24
-#define	BPI_R2_14	-1
-#define	BPI_R2_16	25
-#define	BPI_R2_18	21
-#define	BPI_R2_20	-1
-#define	BPI_R2_22	18
-#define	BPI_R2_24	53
-#define	BPI_R2_26	20
-#define	BPI_R2_28	58
-#define	BPI_R2_30	-1
-#define	BPI_R2_32	72
-#define	BPI_R2_34	-1
-#define	BPI_R2_36	19
-#define	BPI_R2_38	22
-#define	BPI_R2_40	200
+#define BPI_R2_02   -1
+#define BPI_R2_04   -1
+#define BPI_R2_06   -1
+#define BPI_R2_08   MTK_GPIO_82
+#define BPI_R2_10   MTK_GPIO_81
+#define BPI_R2_12   MTK_GPIO_24
+#define BPI_R2_14   -1
+#define BPI_R2_16   MTK_GPIO_25
+#define BPI_R2_18   MTK_GPIO_21
+#define BPI_R2_20   -1
+#define BPI_R2_22   MTK_GPIO_18
+#define BPI_R2_24   MTK_GPIO_53
+#define BPI_R2_26   MTK_GPIO_20
+#define BPI_R2_28   MTK_GPIO_58
+#define BPI_R2_30   -1
+#define BPI_R2_32   MTK_GPIO_72
+#define BPI_R2_34   -1
+#define BPI_R2_36   MTK_GPIO_19
+#define BPI_R2_38   MTK_GPIO_22
+#define BPI_R2_40   MTK_GPIO_200
+
 
 //map wpi gpio_num(index) to bp bpio_num(element)
-int pinToGpio_BPI_R2 [64] =
+const int pinToGpio_BPI_R2 [64] =
 {
    BPI_R2_11, BPI_R2_12,        //0, 1
    BPI_R2_13, BPI_R2_15,        //2, 3
@@ -66,7 +67,7 @@ int pinToGpio_BPI_R2 [64] =
 } ;
 
 //map bcm gpio_num(index) to bp gpio_num(element)
-int pinTobcm_BPI_R2 [64] =
+const int pinTobcm_BPI_R2 [64] =
 {
   BPI_R2_27, BPI_R2_28,  //0, 1
   BPI_R2_03, BPI_R2_05,  //2, 3
@@ -89,7 +90,7 @@ int pinTobcm_BPI_R2 [64] =
 } ;
 
 //map phys_num(index) to bp gpio_num(element)
-int physToGpio_BPI_R2 [64] =
+const int physToGpio_BPI_R2 [64] =
 {
           -1,                //0
           -1,        -1,     //1, 2

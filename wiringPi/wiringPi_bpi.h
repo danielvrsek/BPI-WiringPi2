@@ -60,6 +60,8 @@ extern unsigned int  bpi_digitalRead8        (int pin) ;
 extern          void bpi_digitalWrite8       (int pin, int value) ;
 extern          void bpi_pwmWrite            (int pin, int value) ;
 
+extern          int mtk_wiringPiSetup        (void) ;
+
 // On-Board Raspberry Pi hardware specific stuff
 
 extern          void bpi_setPadDrive         (int group, int value) ;

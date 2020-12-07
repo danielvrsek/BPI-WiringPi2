@@ -116,6 +116,13 @@ int *pinTobcm_BP ;
 #define MAP_SIZE	          (4096*2)
 #define MAP_MASK	          (MAP_SIZE - 1)
 
+#define MTK_GPIO_BASE_ADDR		0x10005000
+#define MTK_GPIO_DIR				  0x00
+#define MTK_GPIO_PULLE        0x150
+#define MTK_GPIO_DOUT			    0x500
+#define MTK_GPIO_DIN				  0x630
+#define MTK_GPIO_MODE				  0x760
+
 //sunxi_pwm, only use ch0
 #define SUNXI_PWM_BASE        (0x01c21400)
 #define SUNXI_PWM_CH0_CTRL    (SUNXI_PWM_BASE)
@@ -834,7 +841,7 @@ int sunxi_digitalRead(int pin)
   if(bank == 11)
     phyaddr = SUNXI_GPIO_LM_BASE + ((bank - 11) * 36) + 0x10;
   else
- 	phyaddr = SUNXI_GPIO_BASE + (bank * 36) + 0x10;
+ 	  phyaddr = SUNXI_GPIO_BASE + (bank * 36) + 0x10;
 
   if (wiringPiDebug)
     printf("func:%s pin:%d,bank:%d index:%d phyaddr:0x%x\n",__func__, pin,bank,index,phyaddr); 
@@ -1045,13 +1052,22 @@ void bpi_pinMode (int pin, int mode)
     softToneStop (origPin) ;
     if (mode == INPUT)
     {
-      sunxi_set_pin_mode(pin,INPUT);
+      if (bpi_found_mtk == 1) {
+        mtk_set_gpio_mode(pin, 0);
+      } else {
+        sunxi_set_pin_mode(pin, INPUT);
+      }
       wiringPinMode = INPUT;
       return ;
     }
     else if (mode == OUTPUT)
     {
-      sunxi_set_pin_mode(pin, OUTPUT);
+      if (bpi_found_mtk == 1) {
+        mtk_set_gpio_mode(pin, 1);
+      }
+      else {
+        sunxi_set_pin_mode(pin, OUTPUT);
+      }
       wiringPinMode = OUTPUT;
       return ;
     }
@@ -1384,11 +1400,101 @@ struct BPIBoards bpiboard [] =
   { "bpi-m2p_H5",  10801, 31, 1, 2, 5, 0, pinToGpio_BPI_M2P, physToGpio_BPI_M2P, pinTobcm_BPI_M2P, M2P_I2C_DEV, M2P_SPI_DEV, {M2P_PWM_OFFSET,M2P_I2C_OFFSET,M2P_SPI_OFFSET} },
   { "bpi-m2u_V40", 10901, 32, 1, 3, 5, 0, pinToGpio_BPI_M2U, physToGpio_BPI_M2U, pinTobcm_BPI_M2U, M2U_I2C_DEV, M2U_SPI_DEV, {M2U_PWM_OFFSET,M2U_I2C_OFFSET,M2U_SPI_OFFSET} },
   { "bpi-m2z",	   11001, 33, 1, 1, 5, 0, pinToGpio_BPI_M2P, physToGpio_BPI_M2P, pinTobcm_BPI_M2P, M2P_I2C_DEV, M2P_SPI_DEV, {M2P_PWM_OFFSET,M2P_I2C_OFFSET,M2P_SPI_OFFSET} },
-  { "bpi-r2",	   11101, 34, 1, 3, 5, 0, pinToGpio_BPI_R2, physToGpio_BPI_R2, pinTobcm_BPI_R2, R2_I2C_DEV, R2_SPI_DEV, {R2_PWM_OFFSET,R2_I2C_OFFSET,R2_SPI_OFFSET} },  // !!!!! mem field is copy from M3, don't know correct num for R2
+  { "bpi-r2",	   11101, 34, 1, 3, 5, 0, pinToGpio_BPI_R2, physToGpio_BPI_R2, pinTobcm_BPI_R2, R2_I2C_DEV, R2_SPI_DEV, {R2_PWM_OFFSET,R2_I2C_OFFSET,R2_SPI_OFFSET} },  // !!!!! mem field is copy from M3, don't know correct num for R2  
   { NULL,		0, 0, 1, 2, 5, 0, NULL, NULL, NULL, NULL, NULL, {-1, -1, -1} },
 } ;
 
 extern int bpi_found;
+extern int bpi_found_mtk;
+
+static uint8_t* gpio_mmap_reg = NULL;
+
+int mtk_set_gpio_out(unsigned int pin, unsigned int output)
+{
+    uint32_t tmp;
+    uint32_t position = 0;
+
+    position = gpio_mmap_reg + MTK_GPIO_DOUT + (pin / 16) * 16;
+    printf("pin=%d, output = %d, positon = %X\n", pin, output, position);
+    tmp = *(volatile uint32_t*)(position);
+    printf("tmp = %X\n", tmp);
+    if(output == 1){
+	    tmp |= (1u << (pin % 16));
+    }else{
+	    tmp &= ~(1u << (pin % 16));
+    }
+    printf("tmp = %X\n", tmp);
+    *(volatile uint32_t*)(position) = tmp;
+    printf("finish mtk_set_gpio_out\n");
+    return 1;
+
+}
+
+int mtk_set_gpio_dir(unsigned int pin, unsigned int dir)
+{
+    uint32_t tmp;
+    uint32_t position = 0;
+
+    if(pin < 199){
+        position = gpio_mmap_reg + (pin / 16) * 16;
+    }else{
+        position = gpio_mmap_reg + (pin / 16) * 16 + 0x10;
+    }
+    printf("pin=%d, dir=%d, positon = %X\n", pin, dir, position);
+    tmp = *(volatile uint32_t*)(position);
+    printf("tmp = %X\n", tmp);
+    if(dir == 1){
+        tmp |= (1u << (pin % 16));
+    }else{
+	tmp &= ~(1u << (pin % 16));
+    }
+    printf("tmp = %X\n", tmp);
+    *(volatile uint32_t*)(position) = tmp;
+    return 0;   
+
+}
+
+int mtk_set_gpio_mode(unsigned int pin, unsigned int mode){
+    uint32_t tmp;
+    uint32_t position = 0;
+
+    position = gpio_mmap_reg + MTK_GPIO_DOUT + (pin / 16) * 16;
+    printf("pin=%d, output = %d, positon = %X\n", pin, output, position);
+    tmp = *(volatile uint32_t*)(position);
+    printf("tmp = %X\n", tmp);
+    if(mode == 1){
+	    tmp |= (1u << (pin % 16));
+    }else{
+	    tmp &= ~(1u << (pin % 16));
+    }
+    printf("tmp = %X\n", tmp);
+    *(volatile uint32_t*)(position) = tmp;
+    printf("finish mtk_set_gpio_out\n");
+    return 1;
+}
+
+int mtk_wiringPiSetup(void)
+{
+    int gpio_mmap_fd = 0;
+    if ((gpio_mmap_fd = open("/dev/mem", O_RDWR|O_SYNC)) < 0) {
+        fprintf(stderr, "unable to open mmap file");
+        return -1;
+    }
+    
+      gpio_mmap_reg = (uint8_t*)mmap(NULL, 8 * 1024, PROT_READ | PROT_WRITE,
+        MAP_FILE | MAP_SHARED, gpio_mmap_fd, 0x10005000);
+    if (gpio_mmap_reg == MAP_FAILED) {
+        perror("foo");
+        fprintf(stderr, "failed to mmap");
+        gpio_mmap_reg = NULL;
+        close(gpio_mmap_fd);
+        return -1;
+    }
+    printf("gpio_mmap_fd=%d, gpio_map=%x", gpio_mmap_fd, gpio_mmap_reg);
+
+    return 0;
+
+}
 
 int bpi_piGpioLayout (void)
 {
@@ -1418,6 +1524,10 @@ int bpi_piGpioLayout (void)
         //printf("BPI: name[%s] gpioLayout(%d)\n",board->name, gpioLayout);
         if(gpioLayout >= 21) {
           bpi_found = 1;
+          if(strcmp(board->name, "bpi-r2") == 0){
+            bpi_found_mtk = 1;
+            printf("found mtk board\n");
+          }
           break;
         }
       }
