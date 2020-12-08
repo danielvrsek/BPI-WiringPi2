@@ -2326,10 +2326,6 @@ int wiringPiSetup (void)
 
 #ifdef BPI
   if(bpi_found == 1) {
-    if( bpi_found_mtk == 1) {
-      return mtk_wiringPiSetup();
-    }
-
     bpi_wiringPiSetup();
     return 0;
   }

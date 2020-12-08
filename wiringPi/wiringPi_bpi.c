@@ -102,6 +102,7 @@ extern void initialiseEpoch ();
 
 //for M2 PL and PM group gpios
 static volatile uint32_t *gpio_lm;
+static volatile uint32_t *gpio_mtk;
 int *pinToGpio_BP ;
 int *physToGpio_BP ;
 int *pinTobcm_BP ;
@@ -412,6 +413,8 @@ uint32_t sunxi_gpio_readl(uint32_t addr, int bank)
   /* DK, for PL and PM */
   if(bank == 11)
       val = *(gpio_lm+ mmap_seek);
+  else if (bpi_found_mtk == 1)
+      val = *(gpio_mtk + mmap_seek);
   else
       val = *(gpio + mmap_seek);
 
@@ -424,7 +427,9 @@ void sunxi_gpio_writel(uint32_t val, uint32_t addr, int bank)
   uint32_t mmap_seek = ((addr - mmap_base) >> 2);
 
   if(bank == 11)
-      *(gpio_lm+ mmap_seek) = val;
+      *(gpio_lm + mmap_seek) = val;
+  else if (bpi_found_mtk == 1)
+      *(gpio_mtk + mmap_seek) = val;
   else
       *(gpio + mmap_seek) = val;
 }
@@ -629,6 +634,8 @@ int sunxi_get_pin_mode(int pin)
   /* for M2 PM and PL */
   if(bank == 11)
     phyaddr = SUNXI_GPIO_LM_BASE + ((bank - 11) * 36) + ((index >> 3) << 2);
+  else if (bpi_found_mtk == 1)
+    phyaddr = MTK_GPIO_BASE_ADDR + MTK_GPIO_MODE + 16 * (pin / 5);
   else
   	phyaddr = SUNXI_GPIO_BASE + (bank * 36) + ((index >> 3) << 2);
 
@@ -670,6 +677,8 @@ void sunxi_set_pin_mode(int pin,int mode)
   /* for M2 PM and PL */
   if(bank == 11)
     phyaddr = SUNXI_GPIO_LM_BASE + ((bank - 11) * 36) + ((index >> 3) << 2);
+  else if (bpi_found_mtk == 1)
+    phyaddr = MTK_GPIO_BASE_ADDR + MTK_GPIO_MODE + 16 * (pin / 5);
   else
     phyaddr = SUNXI_GPIO_BASE + (bank * 36) + ((index >> 3) << 2);
 
@@ -789,6 +798,8 @@ void sunxi_digitalWrite(int pin, int value)
   /* for M2 PM and PL */
   if(bank == 11)
     phyaddr = SUNXI_GPIO_LM_BASE + ((bank - 11) * 36) + 0x10;
+  else if (bpi_found_mtk == 1)
+    phyaddr = MTK_GPIO_BASE_ADDR + MTK_GPIO_DOUT + 16 * (pin / 16)
   else
      phyaddr = SUNXI_GPIO_BASE + (bank * 36) + 0x10;
 
@@ -1407,8 +1418,6 @@ struct BPIBoards bpiboard [] =
 extern int bpi_found;
 extern int bpi_found_mtk;
 
-static uint8_t* gpio_mmap_reg = NULL;
-
 int mtk_set_gpio_out(unsigned int pin, unsigned int output)
 {
     uint32_t tmp;
@@ -1481,8 +1490,7 @@ int mtk_wiringPiSetup(void)
         return -1;
     }
     
-      gpio_mmap_reg = (uint8_t*)mmap(NULL, 8 * 1024, PROT_READ | PROT_WRITE,
-        MAP_FILE | MAP_SHARED, gpio_mmap_fd, 0x10005000);
+      gpio_mtk = (uint32_t*)mmap(NULL, BLOCK_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, gpio_mmap_fd, MTK_GPIO_BASE_ADDR);
     if (gpio_mmap_reg == MAP_FAILED) {
         perror("foo");
         fprintf(stderr, "failed to mmap");
@@ -1590,6 +1598,10 @@ int bpi_wiringPiSetup (void)
     printf ("wiringPi: wiringPiSetup called\n") ;
 
   piBoardId (&model, &rev, &mem, &maker, &overVolted) ;
+
+  if (bpi_found_mtk == 1) {
+    return mtk_wiringPiSetup();
+  }
 
   // Open the master /dev/memory device
   if ((fd = open ("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC) ) < 0)
