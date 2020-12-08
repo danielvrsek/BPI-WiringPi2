@@ -15,32 +15,32 @@
 #define BPI_R2_25   -1
 #define BPI_R2_27   MTK_GPIO_57
 #define BPI_R2_29   MTK_GPIO_126
-#define BPI_R2_31   MTK_GPIO_74
-#define BPI_R2_33   MTK_GPIO_73
-#define BPI_R2_35   MTK_GPIO_49
+#define BPI_R2_31   MTK_GPIO_200
+#define BPI_R2_33   MTK_GPIO_126
+#define BPI_R2_35   MTK_GPIO_73
 #define BPI_R2_37   MTK_GPIO_202
 #define BPI_R2_39   -1
 
 #define BPI_R2_02   -1
 #define BPI_R2_04   -1
 #define BPI_R2_06   -1
-#define BPI_R2_08   MTK_GPIO_82
+#define BPI_R2_08   MTK_GPIO_80
 #define BPI_R2_10   MTK_GPIO_81
-#define BPI_R2_12   MTK_GPIO_24
+#define BPI_R2_12   MTK_GPIO_74
 #define BPI_R2_14   -1
 #define BPI_R2_16   MTK_GPIO_25
-#define BPI_R2_18   MTK_GPIO_21
+#define BPI_R2_18   MTK_GPIO_24
 #define BPI_R2_20   -1
 #define BPI_R2_22   MTK_GPIO_18
 #define BPI_R2_24   MTK_GPIO_53
 #define BPI_R2_26   MTK_GPIO_20
 #define BPI_R2_28   MTK_GPIO_58
 #define BPI_R2_30   -1
-#define BPI_R2_32   MTK_GPIO_72
+#define BPI_R2_32   MTK_GPIO_21
 #define BPI_R2_34   -1
 #define BPI_R2_36   MTK_GPIO_19
-#define BPI_R2_38   MTK_GPIO_22
-#define BPI_R2_40   MTK_GPIO_200
+#define BPI_R2_38   MTK_GPIO_72
+#define BPI_R2_40   MTK_GPIO_49
 
 
 //map wpi gpio_num(index) to bp bpio_num(element)
@@ -78,7 +78,7 @@ int pinTobcm_BPI_R2 [64] =
   BPI_R2_32, BPI_R2_33,  //12, 13
   BPI_R2_08, BPI_R2_10,  //14, 15
   BPI_R2_36, BPI_R2_11,  //16, 17
-  BPI_R2_12, BPI_R2_35,	 //18, 19
+  BPI_R2_12, BPI_R2_35,  //18, 19
   BPI_R2_38, BPI_R2_40,  //20, 21
   BPI_R2_15, BPI_R2_16,  //22, 23
   BPI_R2_18, BPI_R2_22,  //24, 25
