@@ -306,10 +306,12 @@ void sunxi_gpio_exports(void)
     if (first == 0)
     {
       ++first ;
-      printf("GPIO Pins exported:\n") ;
+      if (wiringPiDebug)
+        printf("GPIO Pins exported:\n") ;
     }
 
-    printf("%d(BP=%d): ", i, pin) ;
+    if (wiringPiDebug)
+      printf("%d(BP=%d): ", i, pin) ;
 
     if ((l = read (fd, buf, 16)) == 0)
       sprintf(buf, "%s", "?") ;
@@ -318,7 +320,8 @@ void sunxi_gpio_exports(void)
     if ((buf [strlen (buf) - 1]) == '\n')
       buf [strlen (buf) - 1] = 0 ;
 
-    printf("direction=%-3s  ", buf) ;
+    if (wiringPiDebug)
+      printf("direction=%-3s  ", buf) ;
 
     close (fd) ;
 
@@ -326,7 +329,8 @@ void sunxi_gpio_exports(void)
     sprintf (fName, "/sys/class/gpio/gpio%d/value", pin) ;
     if ((fd = open (fName, O_RDONLY)) == -1)
     {
-      printf ("No Value file (huh?)\n") ;
+      if (wiringPiDebug)
+        printf ("No Value file (huh?)\n") ;
       continue ;
     }
 
@@ -337,13 +341,15 @@ void sunxi_gpio_exports(void)
     if ((buf [strlen (buf) - 1]) == '\n')
       buf [strlen (buf) - 1] = 0 ;
 
-    printf("value=%s  ", buf) ;
+    if (wiringPiDebug)
+      printf("value=%s  ", buf) ;
 
     // Read any edge trigger file
     sprintf (fName, "/sys/class/gpio/gpio%d/edge", pin) ;
     if ((fd = open (fName, O_RDONLY)) == -1)
     {
-      printf ("\n") ;
+      if (wiringPiDebug)
+        printf ("\n") ;
       continue ;
     }
 
@@ -354,7 +360,8 @@ void sunxi_gpio_exports(void)
     if ((buf [strlen (buf) - 1]) == '\n')
       buf [strlen (buf) - 1] = 0 ;
 
-    printf("edge=%-8s\n", buf) ;
+    if (wiringPiDebug)
+      printf("edge=%-8s\n", buf) ;
 
     close (fd) ;
 	
@@ -460,7 +467,7 @@ void sunxi_pwm_set_enable(int en)
   }
   
   if (wiringPiDebug)
-	printf(">>function%s,no:%d,enable? :0x%x\n",__func__, __LINE__, val);
+	  printf(">>function%s,no:%d,enable? :0x%x\n",__func__, __LINE__, val);
   
   sunxi_pwm_writel(val, pwm_ch_addr);
   delay (1) ;
@@ -489,7 +496,7 @@ void sunxi_pwm_set_mode(int mode)
   val |= ( SUNXI_PWM_CH0_ACT_STA);
   
   if (wiringPiDebug)
-	printf("%s, %d, mode = 0x%x\n",__func__, __LINE__, val);
+	  printf("%s, %d, mode = 0x%x\n",__func__, __LINE__, val);
   
   sunxi_pwm_writel(val, pwm_ch_addr);
 
@@ -516,7 +523,7 @@ void sunxi_pwm_set_clk(int clk)
   sunxi_pwm_writel(val, pwm_ch_addr);
 	 
   if (wiringPiDebug)
-	printf(">>function%s,no:%d,clk? :0x%x\n",__func__, __LINE__, val);
+	  printf(">>function%s,no:%d,clk? :0x%x\n",__func__, __LINE__, val);
 	 
   delay (1) ;
 }
@@ -728,23 +735,23 @@ void sunxi_set_pin_mode(int pin,int mode)
     {
       reg_offset = bpi_wiringPiSetupRegOffset(mode);
         if(reg_offset < 0){
-	  printf("reg offset not defined\n");
-	  return;
-      }
+	    printf("reg offset not defined\n");
+	    return;
+    }
 
-      //set pin PWMx to pwm mode
-      regval &= ~(7 << offset);
-      regval |=  (reg_offset << offset);
-	  
-      if (wiringPiDebug)
-        printf(">>>>>line:%d PWM mode ready to set val: 0x%x\n",__LINE__,regval);
+    //set pin PWMx to pwm mode
+    regval &= ~(7 << offset);
+    regval |=  (reg_offset << offset);
+  
+    if (wiringPiDebug)
+      printf(">>>>>line:%d PWM mode ready to set val: 0x%x\n",__LINE__,regval);
 
-      sunxi_gpio_writel(regval, phyaddr, bank);
-      delayMicroseconds (200);
-      regval = sunxi_gpio_readl(phyaddr, bank);
-	  
-      if (wiringPiDebug)
-        printf("<<<<<PWM mode set over reg val: 0x%x\n",regval); 
+    sunxi_gpio_writel(regval, phyaddr, bank);
+    delayMicroseconds (200);
+    regval = sunxi_gpio_readl(phyaddr, bank);
+  
+    if (wiringPiDebug)
+      printf("<<<<<PWM mode set over reg val: 0x%x\n",regval); 
 
 	  //register configure
 	  sunxi_pwm_set_all();
@@ -910,7 +917,7 @@ void sunxi_pullUpDnControl (int pin, int pud)
  	phyaddr = SUNXI_GPIO_BASE + (bank * 36) + 0x1c + sub*4;
 
   if (wiringPiDebug)
-	printf("func:%s pin:%d,bank:%d index:%d sub:%d phyaddr:0x%x\n",__func__, pin,bank,index,sub,phyaddr); 
+	  printf("func:%s pin:%d,bank:%d index:%d sub:%d phyaddr:0x%x\n",__func__, pin,bank,index,sub,phyaddr); 
   
   if(BP_PIN_MASK[bank][index] != -1)
   {  //PI13~PI21 need check again
@@ -1196,14 +1203,12 @@ int bpi_digitalRead (int pin)
     {
       if(pin==0)
       {
-	if (wiringPiDebug)
-          printf("%d %s,%d invalid pin,please check it over.\n",pin,__func__, __LINE__);
+        printf("%d %s,%d invalid pin,please check it over.\n",pin,__func__, __LINE__);
         return 0;
       }
       if(syspin[pin]==-1)
       {
-        if (wiringPiDebug)
-          printf("%d %s,%d invalid pin,please check it over.\n",pin,__func__, __LINE__);
+        printf("%d %s,%d invalid pin,please check it over.\n",pin,__func__, __LINE__);
         return 0;
       }
       if (sysFds [pin] == -1)
@@ -1440,15 +1445,18 @@ int mtk_set_gpio_dir(unsigned int pin, unsigned int dir)
     }else{
       position = gpio_mtk + (pin / 16) * 16 + 0x10;
     }
-    printf("pin=%d, dir=%d, position = %X\n", pin, dir, position);
+    if (wiringPiDebug)
+      printf("pin=%d, dir=%d, position = %X\n", pin, dir, position);
     tmp = *(volatile uint32_t*)(position);
-    printf("tmp = %X\n", tmp);
+    if (wiringPiDebug)
+      printf("tmp = %X\n", tmp);
     if(dir == 1){
       tmp |= (1u << (pin % 16));
     }else{
 	    tmp &= ~(1u << (pin % 16));
     }
-    printf("tmp = %X\n", tmp);
+    if (wiringPiDebug)
+      printf("tmp = %X\n", tmp);
     *(volatile uint32_t*)(position) = tmp;
     return 0;
 }
@@ -1467,7 +1475,8 @@ int mtk_wiringPiSetup(void)
         close(gpio_mmap_fd);
         return -1;
     }
-    printf("gpio_mmap_fd=%d, gpio_map=%x", gpio_mmap_fd, gpio_mtk);
+    if (wiringPiDebug)
+      printf("gpio_mmap_fd=%d, gpio_map=%x", gpio_mmap_fd, gpio_mtk);
 
     return 0;
 
@@ -1494,16 +1503,19 @@ int bpi_piGpioLayout (void)
     //printf("BPI: buffer[%s] hardware[%s]\n",buffer, hardware);
 // Search for board:
     for (board = bpiboard ; board->name != NULL ; ++board) {
-      //printf("BPI: name[%s] hardware[%s]\n",board->name, hardware);
+      if (wiringPiDebug)
+        printf("BPI: name[%s] hardware[%s]\n",board->name, hardware);
       if (strcmp (board->name, hardware) == 0) {
         //gpioLayout = board->gpioLayout;
         gpioLayout = board->model; // BPI: use model to replace gpioLayout
-        //printf("BPI: name[%s] gpioLayout(%d)\n",board->name, gpioLayout);
+        if (wiringPiDebug)
+          printf("BPI: name[%s] gpioLayout(%d)\n",board->name, gpioLayout);
         if(gpioLayout >= 21) {
           bpi_found = 1;
           if(strcmp(board->name, "bpi-r2") == 0){
             bpi_found_mtk = 1;
-            printf("found mtk board\n");
+            if (wiringPiDebug)
+              printf("found mtk board\n");
           }
           break;
         }
