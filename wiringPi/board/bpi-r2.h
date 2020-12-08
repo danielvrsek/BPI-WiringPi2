@@ -44,7 +44,7 @@
 
 
 //map wpi gpio_num(index) to bp bpio_num(element)
-const int pinToGpio_BPI_R2 [64] =
+int pinToGpio_BPI_R2 [64] =
 {
    BPI_R2_11, BPI_R2_12,        //0, 1
    BPI_R2_13, BPI_R2_15,        //2, 3
@@ -67,7 +67,7 @@ const int pinToGpio_BPI_R2 [64] =
 } ;
 
 //map bcm gpio_num(index) to bp gpio_num(element)
-const int pinTobcm_BPI_R2 [64] =
+int pinTobcm_BPI_R2 [64] =
 {
   BPI_R2_27, BPI_R2_28,  //0, 1
   BPI_R2_03, BPI_R2_05,  //2, 3
@@ -90,7 +90,7 @@ const int pinTobcm_BPI_R2 [64] =
 } ;
 
 //map phys_num(index) to bp gpio_num(element)
-const int physToGpio_BPI_R2 [64] =
+int physToGpio_BPI_R2 [64] =
 {
           -1,                //0
           -1,        -1,     //1, 2

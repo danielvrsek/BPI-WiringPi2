@@ -87,7 +87,6 @@ extern volatile uint32_t *gpio ;
 extern volatile uint32_t *pwm ;
 extern volatile uint32_t *clk ;
 extern volatile uint32_t *pads ;
-#define BLOCK_SIZE              (4*1024)
 extern void initialiseEpoch ();
 #if 0
 /* define in OLD wiringPi.h */
@@ -102,7 +101,7 @@ extern void initialiseEpoch ();
 
 //for M2 PL and PM group gpios
 static volatile uint32_t *gpio_lm;
-static volatile uint32_t *gpio_mtk;
+static volatile uint32_t gpio_mtk;
 int *pinToGpio_BP ;
 int *physToGpio_BP ;
 int *pinTobcm_BP ;
@@ -116,8 +115,13 @@ extern int bpi_found_mtk;
 //sunxi_gpio
 #define SUNXI_GPIO_BASE       (0x01c20800)
 #define SUNXI_GPIO_LM_BASE    (0x01f02c00)
-#define MAP_SIZE	          (4096*2)
-#define MAP_MASK	          (MAP_SIZE - 1)
+#define MAP_SIZE	            (4096*2)
+#define MAP_MASK	            (MAP_SIZE - 1)
+
+#define BLOCK_SIZE              (4*1024)
+
+#define MTK_MAP_SIZE          4096
+#define MTK_MAP_MASK          (MTK_MAP_SIZE - 1)
 
 #define MTK_GPIO_BASE_ADDR		0x10005000
 #define MTK_GPIO_DIR				  0x00
@@ -205,6 +209,8 @@ static int BP_PIN_MASK[14][32] =  //[BANK]  [INDEX]
 static int pwmmode=0;
 
 static int bpi_wiringPiSetupRegOffset(int mode);
+
+int mtk_set_gpio_dir(unsigned int pin, unsigned int dir);
 
 /**
  *A20 Tools for Banana Pi 
@@ -414,9 +420,9 @@ uint32_t sunxi_gpio_readl(uint32_t addr, int bank)
 
   /* DK, for PL and PM */
   if(bank == 11)
-      val = *(gpio_lm+ mmap_seek);
+      val = *(gpio_lm + mmap_seek);
   else if (bpi_found_mtk == 1)
-      val = *(gpio_mtk + mmap_seek);
+      val = *((volatile uint32_t *)(gpio_mtk + (addr & MTK_MAP_MASK)));
   else
       val = *(gpio + mmap_seek);
 
@@ -431,7 +437,7 @@ void sunxi_gpio_writel(uint32_t val, uint32_t addr, int bank)
   if(bank == 11)
       *(gpio_lm + mmap_seek) = val;
   else if (bpi_found_mtk == 1)
-      *(gpio_mtk + mmap_seek) = val;
+      *((volatile uint32_t *)(gpio_mtk + (addr & MTK_MAP_MASK))) = val;
   else
       *(gpio + mmap_seek) = val;
 }
@@ -794,7 +800,11 @@ void sunxi_digitalWrite(int pin, int value)
 { 
   uint32_t regval = 0;
   int bank = pin >> 5;
-  int index = pin - (bank << 5);
+  int index;
+  if (bpi_found_mtk == 1)
+    index = pin % 16;
+  else
+    index = pin - (bank << 5);
   uint32_t phyaddr=0;
 
   /* for M2 PM and PL */
@@ -803,7 +813,7 @@ void sunxi_digitalWrite(int pin, int value)
   else if (bpi_found_mtk == 1)
     phyaddr = MTK_GPIO_BASE_ADDR + MTK_GPIO_DOUT + 16 * (pin / 16);
   else
-     phyaddr = SUNXI_GPIO_BASE + (bank * 36) + 0x10;
+    phyaddr = SUNXI_GPIO_BASE + (bank * 36) + 0x10;
 
   if (wiringPiDebug)
     printf("func:%s pin:%d, value:%d bank:%d index:%d phyaddr:0x%x\n",__func__, pin , value,bank,index,phyaddr);
@@ -847,12 +857,18 @@ int sunxi_digitalRead(int pin)
 { 
   uint32_t regval = 0;
   int bank = pin >> 5;
-  int index = pin - (bank << 5);
+  int index;
+  if (bpi_found_mtk == 1)
+    index = pin % 16;
+  else
+    index = pin - (bank << 5);
   uint32_t phyaddr=0;
 
   /* for M2 PM and PL */
   if(bank == 11)
     phyaddr = SUNXI_GPIO_LM_BASE + ((bank - 11) * 36) + 0x10;
+  else if (bpi_found_mtk == 1)
+    phyaddr = MTK_GPIO_BASE_ADDR + MTK_GPIO_DIN + 16 * (pin / 16);
   else
  	  phyaddr = SUNXI_GPIO_BASE + (bank * 36) + 0x10;
 
@@ -1065,22 +1081,17 @@ void bpi_pinMode (int pin, int mode)
     softToneStop (origPin) ;
     if (mode == INPUT)
     {
-      if (bpi_found_mtk == 1) {
-        mtk_set_gpio_mode(pin, 0);
-      } else {
-        sunxi_set_pin_mode(pin, INPUT);
-      }
+      sunxi_set_pin_mode(pin, INPUT);
+      if (bpi_found_mtk == 1)
+        mtk_set_gpio_dir(pin, INPUT);   
       wiringPinMode = INPUT;
       return ;
     }
     else if (mode == OUTPUT)
     {
-      if (bpi_found_mtk == 1) {
-        mtk_set_gpio_mode(pin, 1);
-      }
-      else {
-        sunxi_set_pin_mode(pin, OUTPUT);
-      }
+      sunxi_set_pin_mode(pin, OUTPUT);
+      if (bpi_found_mtk == 1)
+        mtk_set_gpio_dir(pin, OUTPUT);   
       wiringPinMode = OUTPUT;
       return ;
     }
@@ -1419,67 +1430,27 @@ struct BPIBoards bpiboard [] =
 
 extern int bpi_found;
 
-int mtk_set_gpio_out(unsigned int pin, unsigned int output)
-{
-    uint32_t tmp;
-    uint32_t position = 0;
-
-    position = gpio_mtk + MTK_GPIO_DOUT + (pin / 16) * 16;
-    printf("pin=%d, output = %d, positon = %X\n", pin, output, position);
-    tmp = *(volatile uint32_t*)(position);
-    printf("tmp = %X\n", tmp);
-    if(output == 1){
-	    tmp |= (1u << (pin % 16));
-    }else{
-	    tmp &= ~(1u << (pin % 16));
-    }
-    printf("tmp = %X\n", tmp);
-    *(volatile uint32_t*)(position) = tmp;
-    printf("finish mtk_set_gpio_out\n");
-    return 1;
-
-}
-
 int mtk_set_gpio_dir(unsigned int pin, unsigned int dir)
 {
     uint32_t tmp;
     uint32_t position = 0;
 
     if(pin < 199){
-        position = gpio_mtk + (pin / 16) * 16;
+      position = gpio_mtk + (pin / 16) * 16;
     }else{
-        position = gpio_mtk + (pin / 16) * 16 + 0x10;
+      position = gpio_mtk + (pin / 16) * 16 + 0x10;
     }
-    printf("pin=%d, dir=%d, positon = %X\n", pin, dir, position);
+    printf("pin=%d, dir=%d, position = %X\n", pin, dir, position);
     tmp = *(volatile uint32_t*)(position);
     printf("tmp = %X\n", tmp);
     if(dir == 1){
-        tmp |= (1u << (pin % 16));
-    }else{
-	tmp &= ~(1u << (pin % 16));
-    }
-    printf("tmp = %X\n", tmp);
-    *(volatile uint32_t*)(position) = tmp;
-    return 0;   
-
-}
-
-int mtk_set_gpio_mode(unsigned int pin, unsigned int mode){
-    uint32_t tmp;
-    uint32_t position = 0;
-
-    position = gpio_mtk + MTK_GPIO_DOUT + (pin / 16) * 16;
-    tmp = *(volatile uint32_t*)(position);
-    printf("tmp = %X\n", tmp);
-    if(mode == 1){
-	    tmp |= (1u << (pin % 16));
+      tmp |= (1u << (pin % 16));
     }else{
 	    tmp &= ~(1u << (pin % 16));
     }
     printf("tmp = %X\n", tmp);
     *(volatile uint32_t*)(position) = tmp;
-    printf("finish mtk_set_gpio_out\n");
-    return 1;
+    return 0;
 }
 
 int mtk_wiringPiSetup(void)
@@ -1490,11 +1461,9 @@ int mtk_wiringPiSetup(void)
         return -1;
     }
     
-      gpio_mtk = (uint32_t*)mmap(NULL, BLOCK_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, gpio_mmap_fd, MTK_GPIO_BASE_ADDR);
-    if (gpio_mtk == MAP_FAILED) {
-        perror("foo");
+      gpio_mtk = (uint32_t)mmap(NULL, MTK_MAP_MASK, PROT_READ | PROT_WRITE, MAP_SHARED, gpio_mmap_fd, MTK_GPIO_BASE_ADDR & ~MTK_MAP_MASK);
+    if ((int)gpio_mtk == -1) {
         fprintf(stderr, "failed to mmap");
-        gpio_mtk = NULL;
         close(gpio_mmap_fd);
         return -1;
     }
