@@ -329,6 +329,7 @@ static uint64_t epochMilli, epochMicro ;
 
 #ifdef BPI
 int bpi_found = -1;
+int bpi_found_mtk = -1;
 int wiringPiMode = WPI_MODE_UNINITIALISED ;
 #else
 static int wiringPiMode = WPI_MODE_UNINITIALISED ;
