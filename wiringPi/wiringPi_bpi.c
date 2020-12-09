@@ -684,7 +684,11 @@ void sunxi_set_pin_mode(int pin,int mode)
 {
   uint32_t regval = 0;
   int bank = pin >> 5;
-  int index = pin - (bank << 5);
+  int index;
+  if (bpi_found_mtk == 1)
+    index = pin % 5;
+  else
+    index = pin - (bank << 5);
   int offset = ((index - ((index >> 3) << 3)) << 2);
   uint32_t phyaddr=0;
   int reg_offset;
@@ -700,43 +704,50 @@ void sunxi_set_pin_mode(int pin,int mode)
   if (wiringPiDebug)
     printf("func:%s pin:%d, MODE:%d bank:%d index:%d phyaddr:0x%x\n",__func__, pin , mode,bank,index,phyaddr);
 
-//  if(BP_PIN_MASK[bank][index] != -1)
-  if(1)
+  regval = sunxi_gpio_readl(phyaddr, bank);
+
+  if (wiringPiDebug)
+    printf("read reg val: 0x%x offset:%d\n",regval,offset);
+
+  if(INPUT == mode)
   {
-    regval = sunxi_gpio_readl(phyaddr, bank);
-	
-    if (wiringPiDebug)
-      printf("read reg val: 0x%x offset:%d\n",regval,offset);
-
-    if(INPUT == mode)
-    {
+    if (bpi_found_mtk == 1) {
+      regval &= ~(7 << (index * 3));
+    } else {
       regval &= ~(7 << offset);
-      sunxi_gpio_writel(regval, phyaddr, bank);
-      regval = sunxi_gpio_readl(phyaddr, bank);
-
-      if (wiringPiDebug)
-        printf("Input mode set over reg val: 0x%x\n",regval);
     }
-    else if(OUTPUT == mode)
-    {
+    if (wiringPiDebug)
+      printf("Input mode ready set val: 0x%x\n",regval);
+
+    sunxi_gpio_writel(regval, phyaddr, bank);
+    regval = sunxi_gpio_readl(phyaddr, bank);
+
+    if (wiringPiDebug)
+      printf("Input mode set over reg val: 0x%x\n",regval);
+  }
+  else if(OUTPUT == mode)
+  {
+    if (bpi_found_mtk == 1) {
+      regval &= ~(7 << (index * 3));
+    } else {
       regval &= ~(7 << offset);
       regval |=  (1 << offset);
-	  
-      if (wiringPiDebug)
-        printf("Out mode ready set val: 0x%x\n",regval);
+    }
+    if (wiringPiDebug)
+      printf("Out mode ready set val: 0x%x\n",regval);
 
-      sunxi_gpio_writel(regval, phyaddr, bank);
-      regval = sunxi_gpio_readl(phyaddr, bank);
-	  
-      if (wiringPiDebug)
-        printf("Out mode set over reg val: 0x%x\n",regval);
-    } 
-    else if(PWM_OUTPUT == mode)
-    {
-      reg_offset = bpi_wiringPiSetupRegOffset(mode);
-        if(reg_offset < 0){
-	    printf("reg offset not defined\n");
-	    return;
+    sunxi_gpio_writel(regval, phyaddr, bank);
+    regval = sunxi_gpio_readl(phyaddr, bank);
+  
+    if (wiringPiDebug)
+      printf("Out mode set over reg val: 0x%x\n",regval);
+  } 
+  else if(PWM_OUTPUT == mode)
+  {
+    reg_offset = bpi_wiringPiSetupRegOffset(mode);
+    if(reg_offset < 0){
+      printf("reg offset not defined\n");
+      return;
     }
 
     //set pin PWMx to pwm mode
@@ -753,51 +764,46 @@ void sunxi_set_pin_mode(int pin,int mode)
     if (wiringPiDebug)
       printf("<<<<<PWM mode set over reg val: 0x%x\n",regval); 
 
-	  //register configure
-	  sunxi_pwm_set_all();
-    }
-	else if(I2C_PIN == mode)
-    {
-      reg_offset = bpi_wiringPiSetupRegOffset(mode);
-        if(reg_offset < 0){
-          printf("reg offset not defined\n");
-          return;
-      }
-
-      //set pin to i2c mode
-      regval &= ~(7 << offset);
-      regval |=  (reg_offset << offset);
-
-      sunxi_gpio_writel(regval, phyaddr, bank);
-      delayMicroseconds (200);
-      regval = sunxi_gpio_readl(phyaddr, bank);
-	  
-      if (wiringPiDebug)
-        printf("<<<<<I2C mode set over reg val: 0x%x\n",regval); 
-    }
-	else if(SPI_PIN == mode)
-    {
-      reg_offset = bpi_wiringPiSetupRegOffset(mode);
-        if(reg_offset < 0){
-          printf("reg offset not defined\n");
-          return;
-      }
-
-      //set pin to spi mode
-      regval &= ~(7 << offset);
-      regval |=  (reg_offset << offset);
-
-      sunxi_gpio_writel(regval, phyaddr, bank);
-      delayMicroseconds (200);
-      regval = sunxi_gpio_readl(phyaddr, bank);
-	  
-      if (wiringPiDebug)
-        printf("<<<<<SPI mode set over reg val: 0x%x\n",regval); 
-    }
+    //register configure
+    sunxi_pwm_set_all();
   }
-  else 
+  else if(I2C_PIN == mode)
   {
-    printf("line:__%d___ %d pin (%d:%d) number error(\n",__LINE__,pin,bank,index);
+    reg_offset = bpi_wiringPiSetupRegOffset(mode);
+      if(reg_offset < 0){
+        printf("reg offset not defined\n");
+        return;
+    }
+
+    //set pin to i2c mode
+    regval &= ~(7 << offset);
+    regval |=  (reg_offset << offset);
+
+    sunxi_gpio_writel(regval, phyaddr, bank);
+    delayMicroseconds (200);
+    regval = sunxi_gpio_readl(phyaddr, bank);
+  
+    if (wiringPiDebug)
+      printf("<<<<<I2C mode set over reg val: 0x%x\n",regval); 
+  }
+  else if(SPI_PIN == mode)
+  {
+    reg_offset = bpi_wiringPiSetupRegOffset(mode);
+      if(reg_offset < 0){
+        printf("reg offset not defined\n");
+        return;
+    }
+
+    //set pin to spi mode
+    regval &= ~(7 << offset);
+    regval |=  (reg_offset << offset);
+
+    sunxi_gpio_writel(regval, phyaddr, bank);
+    delayMicroseconds (200);
+    regval = sunxi_gpio_readl(phyaddr, bank);
+  
+    if (wiringPiDebug)
+      printf("<<<<<SPI mode set over reg val: 0x%x\n",regval); 
   }
 
 	return ;
