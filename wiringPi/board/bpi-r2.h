@@ -24,7 +24,7 @@
 #define BPI_R2_02   -1
 #define BPI_R2_04   -1
 #define BPI_R2_06   -1
-#define BPI_R2_08   MTK_GPIO_80
+#define BPI_R2_08   MTK_GPIO_82
 #define BPI_R2_10   MTK_GPIO_81
 #define BPI_R2_12   MTK_GPIO_74
 #define BPI_R2_14   -1
